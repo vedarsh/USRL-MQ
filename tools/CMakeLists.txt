@@ -1,0 +1,16 @@
+# Do NOT call project() here; top-level CMakeLists already did that.
+
+# Tools share the core library's public includes; nothing extra needed
+# unless tools have their own local headers.
+
+# usrl-ctl tool
+add_executable(usrl-ctl
+    usrl_ctl.c
+)
+target_link_libraries(usrl-ctl PRIVATE usrl_core)
+
+# usrl-top tool
+add_executable(usrl-top
+    usrl_top.c
+)
+target_link_libraries(usrl-top PRIVATE usrl_core)
