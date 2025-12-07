@@ -1,5 +1,5 @@
 /* =============================================================================
- * USRL TCP TRANSPORT IMPLEMENTATION
+ * USRL TCP TRANSPORT IMPLEMENTATION (ROBUST)
  * =============================================================================
  */
 
@@ -28,7 +28,8 @@ static void set_tcp_nodelay(int fd) {
 
 /* =============================================================================
  * SERVER FACTORY
- * ============================================================================= */
+ * =============================================================================
+ */
 usrl_transport_t *usrl_tcp_create_server(
     const char      *host, 
     int              port, 
@@ -62,7 +63,7 @@ usrl_transport_t *usrl_tcp_create_server(
     /* 3. Listen */
     if (listen(ctx->sockfd, 128) == -1) goto err;
 
-    /* 4. Set accept timeout (100ms) for graceful shutdown */
+    /* 4. Set accept timeout (100ms) for graceful shutdown loop */
     struct timeval tv;
     tv.tv_sec = 0;
     tv.tv_usec = 100000;
@@ -78,7 +79,8 @@ err:
 
 /* =============================================================================
  * CLIENT FACTORY
- * ============================================================================= */
+ * =============================================================================
+ */
 usrl_transport_t *usrl_tcp_create_client(
     const char      *host, 
     int              port, 
@@ -121,13 +123,14 @@ err:
 
 /* =============================================================================
  * ACCEPT
- * ============================================================================= */
+ * =============================================================================
+ */
 int usrl_tcp_accept_impl(usrl_transport_t *server, usrl_transport_t **client_out) {
     /* accept() blocks for 100ms (SO_RCVTIMEO) */
     int client_fd = accept(server->sockfd, NULL, NULL);
     
     if (client_fd == -1) {
-        return -1; /* Timeout or error */
+        return -1; /* Timeout or error (check errno in caller) */
     }
 
     set_tcp_nodelay(client_fd);
@@ -147,8 +150,9 @@ int usrl_tcp_accept_impl(usrl_transport_t *server, usrl_transport_t **client_out
 }
 
 /* =============================================================================
- * SEND (BLOCKING)
- * ============================================================================= */
+ * SEND (BLOCKING, ROBUST)
+ * =============================================================================
+ */
 ssize_t usrl_tcp_send(usrl_transport_t *ctx, const void *data, size_t len) {
     if (!ctx) return -1;
     
@@ -156,17 +160,24 @@ ssize_t usrl_tcp_send(usrl_transport_t *ctx, const void *data, size_t len) {
     const uint8_t *ptr = data;
     
     while (total < len) {
-        ssize_t n = send(ctx->sockfd, ptr + total, len - total, 0);
-        if (n <= 0) return -1;
-        total += n;
+        // Use MSG_NOSIGNAL to avoid SIGPIPE crash on client disconnect
+        ssize_t n = send(ctx->sockfd, ptr + total, len - total, MSG_NOSIGNAL);
+        
+        if (n > 0) {
+            total += n;
+        } else {
+            if (errno == EINTR) continue; /* Retry on signal interrupt */
+            return -1; /* Real error */
+        }
     }
     
     return total;
 }
 
 /* =============================================================================
- * RECV (BLOCKING)
- * ============================================================================= */
+ * RECV (BLOCKING, ROBUST)
+ * =============================================================================
+ */
 ssize_t usrl_tcp_recv(usrl_transport_t *ctx, void *data, size_t len) {
     if (!ctx) return -1;
     
@@ -175,8 +186,18 @@ ssize_t usrl_tcp_recv(usrl_transport_t *ctx, void *data, size_t len) {
     
     while (total < len) {
         ssize_t n = recv(ctx->sockfd, ptr + total, len - total, 0);
-        if (n <= 0) return -1;
-        total += n;
+        
+        if (n > 0) {
+            total += n;
+        } else if (n == 0) {
+            /* EOF. Return bytes read so far. 
+               If total==0, it returns 0 (Clean EOF). 
+               If total>0, it returns partial count (Short Read). */
+            return total;
+        } else {
+            if (errno == EINTR) continue; /* Retry on signal interrupt */
+            return -1; /* Real error */
+        }
     }
     
     return total;
@@ -184,14 +205,20 @@ ssize_t usrl_tcp_recv(usrl_transport_t *ctx, void *data, size_t len) {
 
 /* =============================================================================
  * DESTROY
- * ============================================================================= */
+ * =============================================================================
+ */
+/* =============================================================================
+ * DESTROY (FIXED FOR FORK)
+ * =============================================================================
+ */
 void usrl_tcp_destroy(usrl_transport_t *ctx_) {
     struct usrl_transport_ctx *ctx = (struct usrl_transport_ctx*)ctx_;
     if (!ctx) return;
     
     if (ctx->sockfd != -1) {
-        shutdown(ctx->sockfd, SHUT_RDWR);
+        
         close(ctx->sockfd);
     }
     free(ctx);
 }
+

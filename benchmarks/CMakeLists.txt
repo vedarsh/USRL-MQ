@@ -25,6 +25,10 @@ target_link_libraries(bench_tcp_server usrl_net usrl_core)
 add_executable(bench_tcp_client bench_tcp_client.c)
 target_link_libraries(bench_tcp_client usrl_net usrl_core)
 
+add_executable(bench_tcp_mt bench_tcp_mt.c)
+target_link_libraries(bench_tcp_mt usrl_net usrl_core pthread rt)
+
+
 # Copy the config JSON to the build directory
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/usrl_config_bench.json

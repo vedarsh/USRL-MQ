@@ -1,5 +1,5 @@
 /* =============================================================================
- * USRL TCP CLIENT BENCHMARK (Clean Output)
+ * USRL TCP CLIENT BENCHMARK (Unified Output)
  * =============================================================================
  */
 
@@ -45,7 +45,6 @@ int main(int argc, char *argv[]) {
     const char *host = argc > 1 ? argv[1] : "127.0.0.1";
     int port = argc > 2 ? atoi(argv[2]) : DEFAULT_PORT;
     
-    /* 1. Startup Log (Matches SHM style) */
     printf("[BENCH] TCP Client starting on %s:%d (Payload: %d)...\n", 
            host, port, PAYLOAD_SIZE);
     
@@ -72,13 +71,17 @@ int main(int argc, char *argv[]) {
     
     clock_gettime(CLOCK_MONOTONIC, &end);
     double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-    double rate = count / 1e6 / elapsed;
+    
+    double rate = count / elapsed;
     double bw_mbps = (count * PAYLOAD_SIZE * 8.0) / (elapsed * 1e6);
     double avg_ns = count > 0 ? (elapsed * 1e9 / count) : 0;
     
-    /* 2. Result Log (Matches SHM style exactly) */
-    printf("[BENCH] TCP Result: %.2f M req/sec | %.2f Mbps | Avg Latency: %.2f ns\n", 
-           rate, bw_mbps, avg_ns);
+    /* UNIFIED OUTPUT BLOCK */
+    printf("[BENCH] FINAL RESULT (1 Thread):\n");
+    printf("   Total Requests: %ld\n", count);
+    printf("   Aggregate Rate: %.2f M req/sec\n", rate / 1e6);
+    printf("   Aggregate BW:   %.2f Mbps (%.2f GB/s)\n", bw_mbps, bw_mbps / 8000.0);
+    printf("   Avg Latency:    %.2f ns\n", avg_ns);
     
     free(payload);
     usrl_trans_destroy(client);
