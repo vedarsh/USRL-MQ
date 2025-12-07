@@ -4,6 +4,7 @@ project(usrl_core C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_FLAGS_RELEASE "-O3 -march=native -Wall -Wextra")
 
+<<<<<<< HEAD
 # Export includes so sub-projects find headers automatically
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/core/includes)
 
@@ -29,5 +30,8 @@ endif()
 target_include_directories(usrl_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # --- Add Subdirectories ---
+=======
+add_subdirectory(core)
+>>>>>>> e90a2cb (split cmake)
 add_subdirectory(benchmarks)
 add_subdirectory(tools)
