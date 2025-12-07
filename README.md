@@ -2,7 +2,7 @@
 
 USRL is a high-performance, lock-free inter-process communication (IPC) library based on shared memory ring buffers. It is designed for systems that require deterministic, sub-microsecond latency and high sustained throughput, such as avionics, robotics, and high-frequency trading.
 
-USRL eliminates kernel involvement from the hot path by using shared memory and C11 atomics, enabling processes to exchange data at memory speed rather than socket or pipe speed.[web:3][web:4]  
+USRL eliminates kernel involvement from the hot path by using shared memory and C11 atomics, enabling processes to exchange data at memory speed rather than socket or pipe speed.
 
 ---
 
