@@ -222,7 +222,7 @@ int usrl_core_init(
     }
 
     /* ----------------------------------------------------------------------
-     * Done! Print usage stats and unmap.
+     * Print usage stats and unmap.
      * ---------------------------------------------------------------------- */
     DEBUG_PRINT_CORE("used %lu / %lu bytes\n",
                      next_free_slot_offset, size);

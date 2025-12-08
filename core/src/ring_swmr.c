@@ -16,9 +16,9 @@
 #endif
 
 /* --------------------------------------------------------------------------
- * FIX #6: Use CLOCK_MONOTONIC instead of CLOCK_REALTIME
+ * 
  *
- * CLOCK_REALTIME can jump backwards (NTP, admin changes, VM clock skew).
+ * Returns a monotonic timestamp in nanoseconds.
  * CLOCK_MONOTONIC is guaranteed monotonic and suitable for timing.
  * -------------------------------------------------------------------------- */
 static inline uint64_t usrl_timestamp_ns(void) {

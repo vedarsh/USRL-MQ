@@ -99,7 +99,7 @@ typedef struct {
  *   payload_len  : number of bytes in the payload
  *   pub_id       : publisher id (new field — who wrote this slot)
  * -------------------------------------------------------------------------- */
-typedef struct {
+typedef struct __attribute__((aligned(64))) {
     atomic_uint_fast64_t seq;     /* commit sequence; 0 == empty/uninitialized */
     uint64_t timestamp_ns;
     uint32_t payload_len;
