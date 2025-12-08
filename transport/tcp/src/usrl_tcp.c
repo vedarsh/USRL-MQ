@@ -50,12 +50,13 @@ usrl_transport_t *usrl_tcp_create_server(
 
     int opt = 1;
     setsockopt(ctx->sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    setsockopt(ctx->sockfd, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt));
 
     /* 2. Bind */
     struct sockaddr_in addr = {0};
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
-    inet_pton(AF_INET, host ? host : "0.0.0.0", &addr.sin_addr);
+    if(inet_pton(AF_INET, host ? host : "0.0.0.0", &addr.sin_addr) != 1) goto err;
 
     if (bind(ctx->sockfd, (struct sockaddr*)&addr, sizeof(addr)) == -1) goto err;
     ctx->addr = addr;
@@ -204,13 +205,60 @@ ssize_t usrl_tcp_recv(usrl_transport_t *ctx, void *data, size_t len) {
 }
 
 /* =============================================================================
+ * STREAM RECV (BLOCKING, ROBUST)
+ * =============================================================================
+ */
+ssize_t usrl_tcp_stream_recv(usrl_transport_t *ctx, void *data, size_t len) {
+    if(ctx == NULL || data == NULL || len == 0) {
+        return -1;
+    }
+
+    uint32_t netlen = htonl((uint32_t)len);
+
+    if(usrl_tcp_send(ctx, &netlen, sizeof(netlen)) != sizeof(netlen)) {
+        return -1;
+    }
+
+    if(usrl_tcp_send(ctx, data, len) != (ssize_t)len) {
+        return -2;
+    }
+
+    return 0;
+}
+
+/*=============================================================================
+ * STREAM SEND (BLOCKING, ROBUST)
+ * =============================================================================
+ */
+ssize_t usrl_tcp_stream_send(usrl_transport_t *ctx, const void *data, size_t len) {
+    if(ctx == NULL || data == NULL || len == 0) {
+        return -1;
+    }
+    
+    uint32_t netlen = 0;
+
+    if(usrl_tcp_recv(ctx, &netlen, sizeof(netlen)) != sizeof(netlen)) {
+        return -1;
+    }
+
+    netlen = ntohl(netlen);
+    if(netlen > len) {
+        return -2;
+    }
+
+    if(usrl_tcp_recv(ctx, data, netlen) != (ssize_t)netlen) {
+        return -3;
+    }
+
+    return netlen;
+}
+
+
+/* =============================================================================
  * DESTROY
  * =============================================================================
  */
-/* =============================================================================
- * DESTROY (FIXED FOR FORK)
- * =============================================================================
- */
+
 void usrl_tcp_destroy(usrl_transport_t *ctx_) {
     struct usrl_transport_ctx *ctx = (struct usrl_transport_ctx*)ctx_;
     if (!ctx) return;

@@ -164,6 +164,33 @@ ssize_t usrl_tcp_send(usrl_transport_t *ctx, const void *data, size_t len);
 ssize_t usrl_tcp_recv(usrl_transport_t *ctx, void *data, size_t len);
 
 /**
+ * usrl_tcp_stream_recv()
+ * 
+ * RECV path for stream-oriented reading (e.g., file transfer).
+ * This function attempts to read exactly 'len' bytes, blocking as needed.
+ * 
+ * @param ctx  Transport context
+ * @param data Destination buffer
+ * @param len  Number of bytes to read
+ * @return Bytes received or -1 error 
+ */
+ssize_t usrl_tcp_stream_recv(usrl_transport_t *ctx, void *data, size_t len);
+
+/**
+ * usrl_tcp_stream_send()
+ * 
+ * SEND path for stream-oriented writing (e.g., file transfer).
+ * This function attempts to send exactly 'len' bytes, blocking as needed.
+ * 
+ * @param ctx  Transport context
+ * @param data Source buffer
+ * @param len  Number of bytes to send
+ * @return Bytes sent or -1 error
+ */
+ssize_t usrl_tcp_stream_send(usrl_transport_t *ctx, const void *data, size_t len);
+
+
+/**
  * usrl_tcp_destroy()
  *
  * Cleanup: close socket, destroy ring handles, free context
