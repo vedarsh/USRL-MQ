@@ -45,7 +45,8 @@
  *
  * @param fd Socket file descriptor.
  */
-static void set_tcp_nodelay(int fd) {
+static void set_tcp_nodelay(int fd)
+{
     int opt = 1;
     setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
 }
@@ -73,22 +74,25 @@ static void set_tcp_nodelay(int fd) {
  * @return Pointer to an allocated usrl_transport_t on success, or NULL on error.
  */
 usrl_transport_t *usrl_tcp_create_server(
-    const char      *host,
-    int              port,
-    size_t           ring_size,
-    usrl_ring_mode_t mode
-) {
-    (void)ring_size; (void)mode;
-    
+    const char *host,
+    int port,
+    size_t ring_size,
+    usrl_ring_mode_t mode)
+{
+    (void)ring_size;
+    (void)mode;
+
     struct usrl_transport_ctx *ctx = calloc(1, sizeof(*ctx));
-    if (!ctx) return NULL;
+    if (!ctx)
+        return NULL;
 
     ctx->type = USRL_TRANS_TCP;
     ctx->is_server = true;
 
     /* 1. Create blocking socket */
     ctx->sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (ctx->sockfd == -1) goto err;
+    if (ctx->sockfd == -1)
+        goto err;
 
     int opt = 1;
     setsockopt(ctx->sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
@@ -98,13 +102,16 @@ usrl_transport_t *usrl_tcp_create_server(
     struct sockaddr_in addr = {0};
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
-    if(inet_pton(AF_INET, host ? host : "0.0.0.0", &addr.sin_addr) != 1) goto err;
+    if (inet_pton(AF_INET, host ? host : "0.0.0.0", &addr.sin_addr) != 1)
+        goto err;
 
-    if (bind(ctx->sockfd, (struct sockaddr*)&addr, sizeof(addr)) == -1) goto err;
+    if (bind(ctx->sockfd, (struct sockaddr *)&addr, sizeof(addr)) == -1)
+        goto err;
     ctx->addr = addr;
 
     /* 3. Listen */
-    if (listen(ctx->sockfd, 128) == -1) goto err;
+    if (listen(ctx->sockfd, 128) == -1)
+        goto err;
 
     /* 4. Set accept timeout (100ms) for graceful shutdown loop */
     struct timeval tv;
@@ -112,10 +119,11 @@ usrl_transport_t *usrl_tcp_create_server(
     tv.tv_usec = 100000;
     setsockopt(ctx->sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
-    return (usrl_transport_t*)ctx;
+    return (usrl_transport_t *)ctx;
 
 err:
-    if (ctx->sockfd != -1) close(ctx->sockfd);
+    if (ctx->sockfd != -1)
+        close(ctx->sockfd);
     free(ctx);
     return NULL;
 }
@@ -138,22 +146,25 @@ err:
  * @return Pointer to an allocated usrl_transport_t on success, or NULL on error.
  */
 usrl_transport_t *usrl_tcp_create_client(
-    const char      *host,
-    int              port,
-    size_t           ring_size,
-    usrl_ring_mode_t mode
-) {
-    (void)ring_size; (void)mode;
+    const char *host,
+    int port,
+    size_t ring_size,
+    usrl_ring_mode_t mode)
+{
+    (void)ring_size;
+    (void)mode;
 
     struct usrl_transport_ctx *ctx = calloc(1, sizeof(*ctx));
-    if (!ctx) return NULL;
+    if (!ctx)
+        return NULL;
 
     ctx->type = USRL_TRANS_TCP;
     ctx->is_server = false;
 
     /* 1. Create blocking socket */
     ctx->sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (ctx->sockfd == -1) goto err;
+    if (ctx->sockfd == -1)
+        goto err;
 
     set_tcp_nodelay(ctx->sockfd);
 
@@ -161,18 +172,21 @@ usrl_transport_t *usrl_tcp_create_client(
     struct sockaddr_in addr = {0};
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
-    if (inet_pton(AF_INET, host, &addr.sin_addr) <= 0) goto err;
+    if (inet_pton(AF_INET, host, &addr.sin_addr) <= 0)
+        goto err;
 
     /* 3. Connect (Blocking) */
-    if (connect(ctx->sockfd, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
+    if (connect(ctx->sockfd, (struct sockaddr *)&addr, sizeof(addr)) == -1)
+    {
         goto err;
     }
 
     ctx->addr = addr;
-    return (usrl_transport_t*)ctx;
+    return (usrl_transport_t *)ctx;
 
 err:
-    if (ctx->sockfd != -1) close(ctx->sockfd);
+    if (ctx->sockfd != -1)
+        close(ctx->sockfd);
     free(ctx);
     return NULL;
 }
@@ -194,18 +208,21 @@ err:
  * @return 0 on success, -1 on timeout or error. Caller should inspect errno
  *         to distinguish timeout vs other errors.
  */
-int usrl_tcp_accept_impl(usrl_transport_t *server, usrl_transport_t **client_out) {
+int usrl_tcp_accept_impl(usrl_transport_t *server, usrl_transport_t **client_out)
+{
     /* accept() blocks for 100ms (SO_RCVTIMEO) */
     int client_fd = accept(server->sockfd, NULL, NULL);
-    
-    if (client_fd == -1) {
+
+    if (client_fd == -1)
+    {
         return -1; /* Timeout or error (check errno in caller) */
     }
 
     set_tcp_nodelay(client_fd);
 
     struct usrl_transport_ctx *client = calloc(1, sizeof(*client));
-    if (!client) {
+    if (!client)
+    {
         close(client_fd);
         return -1;
     }
@@ -213,8 +230,8 @@ int usrl_tcp_accept_impl(usrl_transport_t *server, usrl_transport_t **client_out
     client->type = USRL_TRANS_TCP;
     client->is_server = false;
     client->sockfd = client_fd;
-    
-    *client_out = (usrl_transport_t*)client;
+
+    *client_out = (usrl_transport_t *)client;
     return 0;
 }
 
@@ -233,24 +250,31 @@ int usrl_tcp_accept_impl(usrl_transport_t *server, usrl_transport_t **client_out
  * @param len Number of bytes to send.
  * @return Number of bytes written on success (== len), or -1 on error.
  */
-ssize_t usrl_tcp_send(usrl_transport_t *ctx, const void *data, size_t len) {
-    if (!ctx) return -1;
-    
+ssize_t usrl_tcp_send(usrl_transport_t *ctx, const void *data, size_t len)
+{
+    if (!ctx)
+        return -1;
+
     size_t total = 0;
     const uint8_t *ptr = data;
-    
-    while (total < len) {
+
+    while (total < len)
+    {
         // Use MSG_NOSIGNAL to avoid SIGPIPE crash on client disconnect
         ssize_t n = send(ctx->sockfd, ptr + total, len - total, MSG_NOSIGNAL);
-        
-        if (n > 0) {
+
+        if (n > 0)
+        {
             total += n;
-        } else {
-            if (errno == EINTR) continue; /* Retry on signal interrupt */
-            return -1; /* Real error */
+        }
+        else
+        {
+            if (errno == EINTR)
+                continue; /* Retry on signal interrupt */
+            return -1;    /* Real error */
         }
     }
-    
+
     return total;
 }
 
@@ -269,28 +293,37 @@ ssize_t usrl_tcp_send(usrl_transport_t *ctx, const void *data, size_t len) {
  * @param len Number of bytes to read.
  * @return Number of bytes read (may be < len on EOF), or -1 on error.
  */
-ssize_t usrl_tcp_recv(usrl_transport_t *ctx, void *data, size_t len) {
-    if (!ctx) return -1;
-    
+ssize_t usrl_tcp_recv(usrl_transport_t *ctx, void *data, size_t len)
+{
+    if (!ctx)
+        return -1;
+
     size_t total = 0;
     uint8_t *ptr = data;
-    
-    while (total < len) {
+
+    while (total < len)
+    {
         ssize_t n = recv(ctx->sockfd, ptr + total, len - total, 0);
-        
-        if (n > 0) {
+
+        if (n > 0)
+        {
             total += n;
-        } else if (n == 0) {
-            /* EOF. Return bytes read so far. 
-               If total==0, it returns 0 (Clean EOF). 
+        }
+        else if (n == 0)
+        {
+            /* EOF. Return bytes read so far.
+               If total==0, it returns 0 (Clean EOF).
                If total>0, it returns partial count (Short Read). */
             return total;
-        } else {
-            if (errno == EINTR) continue; /* Retry on signal interrupt */
-            return -1; /* Real error */
+        }
+        else
+        {
+            if (errno == EINTR)
+                continue; /* Retry on signal interrupt */
+            return -1;    /* Real error */
         }
     }
-    
+
     return total;
 }
 
@@ -313,18 +346,22 @@ ssize_t usrl_tcp_recv(usrl_transport_t *ctx, void *data, size_t len) {
  * @param len Payload length in bytes (must fit in uint32_t).
  * @return 0 on success, -1/-2 on failure (see implementation).
  */
-ssize_t usrl_tcp_stream_recv(usrl_transport_t *ctx, void *data, size_t len) {
-    if(ctx == NULL || data == NULL || len == 0) {
+ssize_t usrl_tcp_stream_recv(usrl_transport_t *ctx, void *data, size_t len)
+{
+    if (ctx == NULL || data == NULL || len == 0)
+    {
         return -1;
     }
 
     uint32_t netlen = htonl((uint32_t)len);
 
-    if(usrl_tcp_send(ctx, &netlen, sizeof(netlen)) != sizeof(netlen)) {
+    if (usrl_tcp_send(ctx, &netlen, sizeof(netlen)) != sizeof(netlen))
+    {
         return -1;
     }
 
-    if(usrl_tcp_send(ctx, data, len) != (ssize_t)len) {
+    if (usrl_tcp_send(ctx, data, len) != (ssize_t)len)
+    {
         return -2;
     }
 
@@ -351,29 +388,33 @@ ssize_t usrl_tcp_stream_recv(usrl_transport_t *ctx, void *data, size_t len) {
  *           -2 frame too large for provided buffer,
  *           -3 payload read failed.
  */
-ssize_t usrl_tcp_stream_send(usrl_transport_t *ctx, const void *data, size_t len) {
-    if(ctx == NULL || data == NULL || len == 0) {
+ssize_t usrl_tcp_stream_send(usrl_transport_t *ctx, const void *data, size_t len)
+{
+    if (ctx == NULL || data == NULL || len == 0)
+    {
         return -1;
     }
-    
+
     uint32_t netlen = 0;
 
-    if(usrl_tcp_recv(ctx, &netlen, sizeof(netlen)) != sizeof(netlen)) {
+    if (usrl_tcp_recv(ctx, &netlen, sizeof(netlen)) != sizeof(netlen))
+    {
         return -1;
     }
 
     netlen = ntohl(netlen);
-    if(netlen > len) {
+    if (netlen > len)
+    {
         return -2;
     }
 
-    if(usrl_tcp_recv(ctx, data, netlen) != (ssize_t)netlen) {
+    if (usrl_tcp_recv(ctx, data, netlen) != (ssize_t)netlen)
+    {
         return -3;
     }
 
     return netlen;
 }
-
 
 /* =============================================================================
  * DESTROY
@@ -387,14 +428,16 @@ ssize_t usrl_tcp_stream_send(usrl_transport_t *ctx, const void *data, size_t len
  *
  * @param ctx_ Pointer to transport context returned from create_client/server.
  */
-void usrl_tcp_destroy(usrl_transport_t *ctx_) {
-    struct usrl_transport_ctx *ctx = (struct usrl_transport_ctx*)ctx_;
-    if (!ctx) return;
-    
-    if (ctx->sockfd != -1) {
-        
+void usrl_tcp_destroy(usrl_transport_t *ctx_)
+{
+    struct usrl_transport_ctx *ctx = (struct usrl_transport_ctx *)ctx_;
+    if (!ctx)
+        return;
+
+    if (ctx->sockfd != -1)
+    {
+
         close(ctx->sockfd);
     }
     free(ctx);
 }
-

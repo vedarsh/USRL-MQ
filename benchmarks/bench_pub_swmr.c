@@ -8,8 +8,10 @@
 // 20 Million messages for a solid sample size
 #define BATCH_SIZE 20000000
 
-int main(int argc, char **argv) {
-    if (argc < 3) {
+int main(int argc, char **argv)
+{
+    if (argc < 3)
+    {
         printf("Usage: %s <topic> <payload_size>\n", argv[0]);
         return 1;
     }
@@ -18,12 +20,14 @@ int main(int argc, char **argv) {
     int payload_size = atoi(argv[2]);
 
     void *core = usrl_core_map("/usrl_core", 128 * 1024 * 1024);
-    if (!core) return 1;
+    if (!core)
+        return 1;
 
     UsrlPublisher pub;
     usrl_pub_init(&pub, core, topic, 1);
 
-    if (!pub.desc) {
+    if (!pub.desc)
+    {
         printf("[BENCH] Error: Topic '%s' not found!\n", topic);
         return 1;
     }
@@ -37,9 +41,11 @@ int main(int argc, char **argv) {
     struct timespec start, end;
     clock_gettime(CLOCK_MONOTONIC, &start);
 
-    for (int i = 0; i < BATCH_SIZE; i++) {
+    for (int i = 0; i < BATCH_SIZE; i++)
+    {
         // Spin wait if ring is full
-        while (usrl_pub_publish(&pub, payload, payload_size) != 0) {
+        while (usrl_pub_publish(&pub, payload, payload_size) != 0)
+        {
             __asm__ volatile("nop");
         }
     }
@@ -48,8 +54,8 @@ int main(int argc, char **argv) {
     double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
 
     double rate_mpps = (BATCH_SIZE / 1e6) / elapsed;
-    double bw_mbps   = ((double)BATCH_SIZE * payload_size / 1024.0 / 1024.0) / elapsed;
-    double avg_ns    = (elapsed * 1e9) / BATCH_SIZE;
+    double bw_mbps = ((double)BATCH_SIZE * payload_size / 1024.0 / 1024.0) / elapsed;
+    double avg_ns = (elapsed * 1e9) / BATCH_SIZE;
 
     printf("[BENCH] SWMR Result: %.2f M msg/sec | %.2f MB/s | Avg Latency: %.2f ns\n",
            rate_mpps, bw_mbps, avg_ns);

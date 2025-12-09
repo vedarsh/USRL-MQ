@@ -19,10 +19,9 @@
  * =============================================================================
  */
 
-#include "usrl_net.h"     /* defines usrl_ring_mode_t, ssize_t */
-#include "usrl_core.h"    /* RingDesc, SlotHeader */
-#include "usrl_ring.h"    /* UsrlPublisher, UsrlSubscriber */
-
+#include "usrl_net.h"  /* defines usrl_ring_mode_t, ssize_t */
+#include "usrl_core.h" /* RingDesc, SlotHeader */
+#include "usrl_ring.h" /* UsrlPublisher, UsrlSubscriber */
 
 #include <netinet/in.h>
 #include <stdbool.h>
@@ -42,24 +41,24 @@
  * =============================================================================
  */
 /* transport/includes/usrl_tcp.h */
-struct usrl_transport_ctx {
-    usrl_transport_type_t type;           /* Must be first: USRL_TRANS_TCP */
-    
-    /* USRL Ring Handles (matches your ring_swmr.c / ring_mwmr.c) */
-    UsrlPublisher        *pub;            /* SEND path */
-    UsrlSubscriber       *sub;            /* RECV path */
-    
-    /* Socket State */
-    int                   sockfd;
-    struct sockaddr_in    addr;
-    bool                  is_server;
-    uint16_t              pub_id;
-    
-    /* USRL Core (REQUIRED for ring init) */
-    void                 *core_base;      /* Mapped SHM region */
-    char                 *tcp_topic;      /* "tcp_client_123" topic name */
-};
+struct usrl_transport_ctx
+{
+    usrl_transport_type_t type; /* Must be first: USRL_TRANS_TCP */
 
+    /* USRL Ring Handles (matches your ring_swmr.c / ring_mwmr.c) */
+    UsrlPublisher *pub;  /* SEND path */
+    UsrlSubscriber *sub; /* RECV path */
+
+    /* Socket State */
+    int sockfd;
+    struct sockaddr_in addr;
+    bool is_server;
+    uint16_t pub_id;
+
+    /* USRL Core (REQUIRED for ring init) */
+    void *core_base; /* Mapped SHM region */
+    char *tcp_topic; /* "tcp_client_123" topic name */
+};
 
 /* =============================================================================
  * TCP FACTORY FUNCTIONS
@@ -88,11 +87,10 @@ struct usrl_transport_ctx {
  * @return Allocated context or NULL on failure
  */
 usrl_transport_t *usrl_tcp_create_server(
-    const char      *host,
-    int              port,
-    size_t           ring_size,
-    usrl_ring_mode_t mode
-);
+    const char *host,
+    int port,
+    size_t ring_size,
+    usrl_ring_mode_t mode);
 
 /**
  * usrl_tcp_create_client()
@@ -112,11 +110,10 @@ usrl_transport_t *usrl_tcp_create_server(
  * @return Allocated context or NULL on failure
  */
 usrl_transport_t *usrl_tcp_create_client(
-    const char      *host,
-    int              port,
-    size_t           ring_size,
-    usrl_ring_mode_t mode
-);
+    const char *host,
+    int port,
+    size_t ring_size,
+    usrl_ring_mode_t mode);
 
 /* =============================================================================
  * TCP METHOD IMPLEMENTATIONS
@@ -165,30 +162,29 @@ ssize_t usrl_tcp_recv(usrl_transport_t *ctx, void *data, size_t len);
 
 /**
  * usrl_tcp_stream_recv()
- * 
+ *
  * RECV path for stream-oriented reading (e.g., file transfer).
  * This function attempts to read exactly 'len' bytes, blocking as needed.
- * 
+ *
  * @param ctx  Transport context
  * @param data Destination buffer
  * @param len  Number of bytes to read
- * @return Bytes received or -1 error 
+ * @return Bytes received or -1 error
  */
 ssize_t usrl_tcp_stream_recv(usrl_transport_t *ctx, void *data, size_t len);
 
 /**
  * usrl_tcp_stream_send()
- * 
+ *
  * SEND path for stream-oriented writing (e.g., file transfer).
  * This function attempts to send exactly 'len' bytes, blocking as needed.
- * 
+ *
  * @param ctx  Transport context
  * @param data Source buffer
  * @param len  Number of bytes to send
  * @return Bytes sent or -1 error
  */
 ssize_t usrl_tcp_stream_send(usrl_transport_t *ctx, const void *data, size_t len);
-
 
 /**
  * usrl_tcp_destroy()

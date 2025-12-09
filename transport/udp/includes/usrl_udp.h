@@ -1,7 +1,7 @@
 #ifndef USRL_UDP_H
 #define USRL_UDP_H
 
-#include "usrl_net.h"   /* defines usrl_transport_t */
+#include "usrl_net.h" /* defines usrl_transport_t */
 
 #include <stddef.h>
 #include <stdint.h>
@@ -13,18 +13,16 @@
  */
 
 usrl_transport_t *usrl_udp_create_server(
-    const char      *host,
-    int              port,
-    size_t           ring_size,
-    usrl_ring_mode_t mode
-);
+    const char *host,
+    int port,
+    size_t ring_size,
+    usrl_ring_mode_t mode);
 
 usrl_transport_t *usrl_udp_create_client(
-    const char      *host,
-    int              port,
-    size_t           ring_size,
-    usrl_ring_mode_t mode
-);
+    const char *host,
+    int port,
+    size_t ring_size,
+    usrl_ring_mode_t mode);
 
 /* =============================================================================
  * UDP METHOD IMPLEMENTATIONS

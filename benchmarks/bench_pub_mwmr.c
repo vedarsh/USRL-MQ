@@ -11,9 +11,11 @@
 #define MSGS_PER_WRITER 5000000
 #define DEFAULT_WRITERS 4
 
-void run_writer(int id, const char *topic, int payload_size) {
+void run_writer(int id, const char *topic, int payload_size)
+{
     void *core = usrl_core_map("/usrl_core", 128 * 1024 * 1024);
-    if (!core) exit(1);
+    if (!core)
+        exit(1);
 
     UsrlMwmrPublisher pub;
     usrl_mwmr_pub_init(&pub, core, topic, (uint16_t)id);
@@ -21,10 +23,12 @@ void run_writer(int id, const char *topic, int payload_size) {
     uint8_t *payload = malloc(payload_size);
     memset(payload, id, payload_size);
 
-    for (int i = 0; i < MSGS_PER_WRITER; i++) {
+    for (int i = 0; i < MSGS_PER_WRITER; i++)
+    {
         // Spin lock
-        while (usrl_mwmr_pub_publish(&pub, payload, payload_size) != 0) {
-             __asm__ volatile("nop");
+        while (usrl_mwmr_pub_publish(&pub, payload, payload_size) != 0)
+        {
+            __asm__ volatile("nop");
         }
     }
 
@@ -32,8 +36,10 @@ void run_writer(int id, const char *topic, int payload_size) {
     exit(0);
 }
 
-int main(int argc, char **argv) {
-    if (argc < 2) {
+int main(int argc, char **argv)
+{
+    if (argc < 2)
+    {
         printf("Usage: %s <topic> [num_writers] [payload_size]\n", argv[0]);
         return 1;
     }
@@ -48,14 +54,17 @@ int main(int argc, char **argv) {
     struct timespec start, end;
     clock_gettime(CLOCK_MONOTONIC, &start);
 
-    for (int i = 0; i < writers; i++) {
-        if (fork() == 0) {
+    for (int i = 0; i < writers; i++)
+    {
+        if (fork() == 0)
+        {
             run_writer(i + 1, topic, payload_size);
         }
     }
 
     // Wait for all writers to finish
-    while (wait(NULL) > 0);
+    while (wait(NULL) > 0)
+        ;
 
     clock_gettime(CLOCK_MONOTONIC, &end);
     double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
@@ -63,8 +72,8 @@ int main(int argc, char **argv) {
     long total_msgs = (long)writers * MSGS_PER_WRITER;
 
     double rate_mpps = (total_msgs / 1e6) / elapsed;
-    double bw_mbps   = ((double)total_msgs * payload_size / 1024.0 / 1024.0) / elapsed;
-    double avg_ns    = (elapsed * 1e9) / total_msgs; // Average time per message (aggregate)
+    double bw_mbps = ((double)total_msgs * payload_size / 1024.0 / 1024.0) / elapsed;
+    double avg_ns = (elapsed * 1e9) / total_msgs; // Average time per message (aggregate)
 
     printf("[BENCH] MWMR Result: %.2f M msg/sec | %.2f MB/s | Avg Latency: %.2f ns\n",
            rate_mpps, bw_mbps, avg_ns);

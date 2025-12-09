@@ -47,30 +47,37 @@
  * @return Allocated usrl_transport_t* on success, or NULL on error.
  */
 usrl_transport_t *usrl_trans_create(
-    usrl_transport_type_t type, 
-    const char           *host, 
-    int                   port, 
-    size_t                ring_size, 
-    usrl_ring_mode_t      mode, 
-    bool                  is_server
-) {
-    switch (type) {
-        case USRL_TRANS_TCP:
-            if (is_server) {
-                return usrl_tcp_create_server(host, port, ring_size, mode);
-            } else {
-                return usrl_tcp_create_client(host, port, ring_size, mode);
-            }
-        
-        case USRL_TRANS_UDP:
-            if (is_server) {
-                return usrl_udp_create_server(host, port, ring_size, mode);
-            } else {
-                return usrl_udp_create_client(host, port, ring_size, mode);
-            }
+    usrl_transport_type_t type,
+    const char *host,
+    int port,
+    size_t ring_size,
+    usrl_ring_mode_t mode,
+    bool is_server)
+{
+    switch (type)
+    {
+    case USRL_TRANS_TCP:
+        if (is_server)
+        {
+            return usrl_tcp_create_server(host, port, ring_size, mode);
+        }
+        else
+        {
+            return usrl_tcp_create_client(host, port, ring_size, mode);
+        }
 
-        default:
-            return NULL;
+    case USRL_TRANS_UDP:
+        if (is_server)
+        {
+            return usrl_udp_create_server(host, port, ring_size, mode);
+        }
+        else
+        {
+            return usrl_udp_create_client(host, port, ring_size, mode);
+        }
+
+    default:
+        return NULL;
     }
 }
 
@@ -88,22 +95,25 @@ usrl_transport_t *usrl_trans_create(
  * @param client_out Out parameter to receive newly-allocated client transport.
  * @return 0 on success; -1 on timeout or error (caller may inspect errno).
  */
-int usrl_trans_accept(usrl_transport_t *server, usrl_transport_t **client_out) {
-    if (!server) return -1;
+int usrl_trans_accept(usrl_transport_t *server, usrl_transport_t **client_out)
+{
+    if (!server)
+        return -1;
 
     /* Safe cast because we know the layout (type is first member) */
-    usrl_transport_type_t type = ((struct usrl_transport_ctx*)server)->type;
+    usrl_transport_type_t type = ((struct usrl_transport_ctx *)server)->type;
 
-    switch (type) {
-        case USRL_TRANS_TCP:
-            return usrl_tcp_accept_impl(server, client_out);
+    switch (type)
+    {
+    case USRL_TRANS_TCP:
+        return usrl_tcp_accept_impl(server, client_out);
 
-        case USRL_TRANS_UDP:
-            /* UDP is connectionless; no accept */
-            return 0;
-            
-        default:
-            return -1;
+    case USRL_TRANS_UDP:
+        /* UDP is connectionless; no accept */
+        return 0;
+
+    default:
+        return -1;
     }
 }
 
@@ -121,20 +131,23 @@ int usrl_trans_accept(usrl_transport_t *server, usrl_transport_t **client_out) {
  * @param len Number of bytes to send.
  * @return Number of bytes sent (typically == len) on success, or negative on error.
  */
-ssize_t usrl_trans_send(usrl_transport_t *ctx, const void *data, size_t len) {
-    if (!ctx) return -1;
+ssize_t usrl_trans_send(usrl_transport_t *ctx, const void *data, size_t len)
+{
+    if (!ctx)
+        return -1;
 
-    usrl_transport_type_t type = ((struct usrl_transport_ctx*)ctx)->type;
+    usrl_transport_type_t type = ((struct usrl_transport_ctx *)ctx)->type;
 
-    switch (type) {
-        case USRL_TRANS_TCP:
-            return usrl_tcp_send(ctx, data, len);
+    switch (type)
+    {
+    case USRL_TRANS_TCP:
+        return usrl_tcp_send(ctx, data, len);
 
-        case USRL_TRANS_UDP:
-            return usrl_udp_send(ctx, data, len);
+    case USRL_TRANS_UDP:
+        return usrl_udp_send(ctx, data, len);
 
-        default:
-            return -1;
+    default:
+        return -1;
     }
 }
 /* --------------------------------------------------------------------------
@@ -151,10 +164,12 @@ ssize_t usrl_trans_send(usrl_transport_t *ctx, const void *data, size_t len) {
  * @param len Buffer length or frame size (backend-specific semantics).
  * @return Backend-specific result: non-negative success value or negative error.
  */
-ssize_t usrl_trans_stream_send(usrl_transport_t *ctx, const void *data, size_t len) {
-    if (!ctx) return -1;
+ssize_t usrl_trans_stream_send(usrl_transport_t *ctx, const void *data, size_t len)
+{
+    if (!ctx)
+        return -1;
 
-    usrl_transport_type_t type = ((struct usrl_transport_ctx*)ctx)->type;
+    usrl_transport_type_t type = ((struct usrl_transport_ctx *)ctx)->type;
 
     switch (type)
     {
@@ -163,7 +178,7 @@ ssize_t usrl_trans_stream_send(usrl_transport_t *ctx, const void *data, size_t l
 
     case USRL_TRANS_UDP:
         return usrl_udp_stream_send(ctx, data, len);
-    
+
     default:
         return -1;
     }
@@ -183,19 +198,22 @@ ssize_t usrl_trans_stream_send(usrl_transport_t *ctx, const void *data, size_t l
  * @param len Number of bytes to read.
  * @return Number of bytes read (may be < len on EOF) or negative on error.
  */
-ssize_t usrl_trans_recv(usrl_transport_t *ctx, void *data, size_t len) {
-    if (!ctx) return -1;
+ssize_t usrl_trans_recv(usrl_transport_t *ctx, void *data, size_t len)
+{
+    if (!ctx)
+        return -1;
 
-    usrl_transport_type_t type = ((struct usrl_transport_ctx*)ctx)->type;
+    usrl_transport_type_t type = ((struct usrl_transport_ctx *)ctx)->type;
 
-    switch (type) {
-        case USRL_TRANS_TCP:
-            return usrl_tcp_recv(ctx, data, len);
-        case USRL_TRANS_UDP:
-            return usrl_udp_recv(ctx, data, len);
-                
-        default:
-            return -1;
+    switch (type)
+    {
+    case USRL_TRANS_TCP:
+        return usrl_tcp_recv(ctx, data, len);
+    case USRL_TRANS_UDP:
+        return usrl_udp_recv(ctx, data, len);
+
+    default:
+        return -1;
     }
 }
 
@@ -213,10 +231,12 @@ ssize_t usrl_trans_recv(usrl_transport_t *ctx, void *data, size_t len) {
  * @return Backend-specific result: number of bytes received on success or
  *         negative error code on failure.
  */
-ssize_t usrl_trans_stream_recv(usrl_transport_t *ctx, void *data, size_t len) {
-    if (!ctx) return -1;
+ssize_t usrl_trans_stream_recv(usrl_transport_t *ctx, void *data, size_t len)
+{
+    if (!ctx)
+        return -1;
 
-    usrl_transport_type_t type = ((struct usrl_transport_ctx*)ctx)->type;
+    usrl_transport_type_t type = ((struct usrl_transport_ctx *)ctx)->type;
 
     switch (type)
     {
@@ -229,7 +249,6 @@ ssize_t usrl_trans_stream_recv(usrl_transport_t *ctx, void *data, size_t len) {
         return -1;
     }
 }
-        
 
 /* --------------------------------------------------------------------------
  * Destroy Dispatcher
@@ -243,22 +262,25 @@ ssize_t usrl_trans_stream_recv(usrl_transport_t *ctx, void *data, size_t len) {
  *
  * @param ctx Transport context to destroy (may be NULL).
  */
-void usrl_trans_destroy(usrl_transport_t *ctx) {
-    if (!ctx) return;
+void usrl_trans_destroy(usrl_transport_t *ctx)
+{
+    if (!ctx)
+        return;
 
-    usrl_transport_type_t type = ((struct usrl_transport_ctx*)ctx)->type;
+    usrl_transport_type_t type = ((struct usrl_transport_ctx *)ctx)->type;
 
-    switch (type) {
-        case USRL_TRANS_TCP:
-            usrl_tcp_destroy(ctx);
-            break;
-        case USRL_TRANS_UDP:
-            usrl_udp_destroy(ctx);
-            break;
+    switch (type)
+    {
+    case USRL_TRANS_TCP:
+        usrl_tcp_destroy(ctx);
+        break;
+    case USRL_TRANS_UDP:
+        usrl_udp_destroy(ctx);
+        break;
 
-        default:
-            /* Just free the memory if we don't know the type */
-            /* (Though this is risky if the struct has other resources) */
-            break; 
+    default:
+        /* Just free the memory if we don't know the type */
+        /* (Though this is risky if the struct has other resources) */
+        break;
     }
 }

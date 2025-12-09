@@ -11,11 +11,14 @@
 /* usrl_platform.h or at the top of ring_mwmr.c */
 
 #if defined(__x86_64__) || defined(__i386__)
-    #define CPU_RELAX() __asm__ volatile("pause" ::: "memory")
+#define CPU_RELAX() __asm__ volatile("pause" ::: "memory")
 #elif defined(__aarch64__) || defined(__arm__)
-    #define CPU_RELAX() __asm__ volatile("yield" ::: "memory")
+#define CPU_RELAX() __asm__ volatile("yield" ::: "memory")
 #else
-    #define CPU_RELAX() do { } while (0) /* Fallback for unknown arch */
+#define CPU_RELAX() \
+    do              \
+    {               \
+    } while (0) /* Fallback for unknown arch */
 #endif
 
 #include "usrl_core.h"
@@ -30,8 +33,12 @@
  * Debug Utilities
  * -------------------------------------------------------------------------- */
 #ifdef DEBUG
-#define DEBUG_PRINT_MWMR(...) \
-    do { printf("[DEBUG][MWMR] " __VA_ARGS__); fflush(stdout); } while (0)
+#define DEBUG_PRINT_MWMR(...)                 \
+    do                                        \
+    {                                         \
+        printf("[DEBUG][MWMR] " __VA_ARGS__); \
+        fflush(stdout);                       \
+    } while (0)
 #else
 #define DEBUG_PRINT_MWMR(...) ((void)0)
 #endif
@@ -44,7 +51,8 @@
  *
  * @return Current monotonic time in nanoseconds.
  */
-static inline uint64_t usrl_timestamp_ns(void) {
+static inline uint64_t usrl_timestamp_ns(void)
+{
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return (uint64_t)ts.tv_sec * 1000000000ULL + ts.tv_nsec;
@@ -59,10 +67,14 @@ static inline uint64_t usrl_timestamp_ns(void) {
  *
  * @param iter Current spin iteration count (0-based).
  */
-static inline void backoff(int iter) {
-    if (iter < 10) {
-        CPU_RELAX();  /* x86 hint, nop on other archs */
-    } else {
+static inline void backoff(int iter)
+{
+    if (iter < 10)
+    {
+        CPU_RELAX(); /* x86 hint, nop on other archs */
+    }
+    else
+    {
         sched_yield();
     }
 }
@@ -84,10 +96,10 @@ static inline void backoff(int iter) {
  */
 void usrl_mwmr_pub_init(
     UsrlMwmrPublisher *p,
-    void              *core_base,
-    const char        *topic,
-    uint16_t           pub_id
-) {
+    void *core_base,
+    const char *topic,
+    uint16_t pub_id)
+{
     if (!p || !core_base || !topic)
         return;
 
@@ -97,16 +109,17 @@ void usrl_mwmr_pub_init(
         return;
 
     /* Type check: must be MWMR */
-    if (t->type != USRL_RING_TYPE_MWMR) {
+    if (t->type != USRL_RING_TYPE_MWMR)
+    {
         printf("[ERROR] Topic '%s' is not MWMR!\n", topic);
         return;
     }
 
     /* Bind publisher to ring */
-    p->desc     = (RingDesc*)((uint8_t*)core_base + t->ring_desc_offset);
-    p->base_ptr = (uint8_t*)core_base + p->desc->base_offset;
-    p->mask     = p->desc->slot_count - 1;
-    p->pub_id   = pub_id;
+    p->desc = (RingDesc *)((uint8_t *)core_base + t->ring_desc_offset);
+    p->base_ptr = (uint8_t *)core_base + p->desc->base_offset;
+    p->mask = p->desc->slot_count - 1;
+    p->pub_id = pub_id;
 
     DEBUG_PRINT_MWMR("publisher %u ready on MWMR topic '%s'\n", pub_id, topic);
 }
@@ -141,9 +154,9 @@ void usrl_mwmr_pub_init(
  */
 int usrl_mwmr_pub_publish(
     UsrlMwmrPublisher *p,
-    const void        *data,
-    uint32_t           len
-) {
+    const void *data,
+    uint32_t len)
+{
     if (USRL_UNLIKELY(!p || !p->desc || !data))
         return -1;
 
@@ -164,9 +177,9 @@ int usrl_mwmr_pub_publish(
     uint64_t commit_seq = old_head + 1;
 
     /* Compute slot index */
-    uint32_t idx   = (uint32_t)((commit_seq - 1) & p->mask);
-    uint8_t *slot  = p->base_ptr + ((uint64_t)idx * d->slot_size);
-    SlotHeader *hdr = (SlotHeader*)slot;
+    uint32_t idx = (uint32_t)((commit_seq - 1) & p->mask);
+    uint8_t *slot = p->base_ptr + ((uint64_t)idx * d->slot_size);
+    SlotHeader *hdr = (SlotHeader *)slot;
 
     /* ----------------------------------------------------------------------
      * 2. FIX #1: Correct Generation-Based Safety Check
@@ -189,9 +202,10 @@ int usrl_mwmr_pub_publish(
      * FIX #4: Deadlock prevention with iteration limit.
      * ---------------------------------------------------------------------- */
     int iter = 0;
-    const int max_iter = 100000;  /* Prevent infinite spin */
+    const int max_iter = 100000; /* Prevent infinite spin */
 
-    while (1) {
+    while (1)
+    {
         uint64_t current_seq =
             atomic_load_explicit(&hdr->seq, memory_order_acquire);
 
@@ -200,7 +214,7 @@ int usrl_mwmr_pub_publish(
             break;
 
         /* FIX #1: Use generation-based comparison */
-        uint64_t my_gen      = commit_seq / d->slot_count;
+        uint64_t my_gen = commit_seq / d->slot_count;
         uint64_t current_gen = current_seq / d->slot_count;
 
         /* Case 2: Previous generation's data - safe to overwrite */
@@ -216,7 +230,8 @@ int usrl_mwmr_pub_publish(
         backoff(iter++);
 
         /* FIX #4: Timeout to prevent deadlock */
-        if (USRL_UNLIKELY(iter > max_iter)) {
+        if (USRL_UNLIKELY(iter > max_iter))
+        {
             DEBUG_PRINT_MWMR("timeout waiting for slot %u (seq %lu)\n",
                              idx, commit_seq);
             return -3;
@@ -231,8 +246,8 @@ int usrl_mwmr_pub_publish(
      * ---------------------------------------------------------------------- */
     memcpy(slot + sizeof(SlotHeader), data, len);
 
-    hdr->payload_len  = len;
-    hdr->pub_id       = p->pub_id;
+    hdr->payload_len = len;
+    hdr->pub_id = p->pub_id;
 
     /* FIX #6: Use monotonic timestamp */
     hdr->timestamp_ns = usrl_timestamp_ns();
@@ -269,9 +284,9 @@ int usrl_mwmr_pub_publish(
  */
 void usrl_mwmr_sub_init(
     UsrlSubscriber *s,
-    void           *core_base,
-    const char     *topic
-) {
+    void *core_base,
+    const char *topic)
+{
     if (!s || !core_base || !topic)
         return;
 
@@ -280,13 +295,14 @@ void usrl_mwmr_sub_init(
         return;
 
     /* Type check: warn if not MWMR */
-    if (t->type != USRL_RING_TYPE_MWMR) {
+    if (t->type != USRL_RING_TYPE_MWMR)
+    {
         printf("[WARN] Topic '%s' is not MWMR, using anyway\n", topic);
     }
 
-    s->desc     = (RingDesc*)((uint8_t*)core_base + t->ring_desc_offset);
-    s->base_ptr = (uint8_t*)core_base + s->desc->base_offset;
-    s->mask     = s->desc->slot_count - 1;
+    s->desc = (RingDesc *)((uint8_t *)core_base + t->ring_desc_offset);
+    s->base_ptr = (uint8_t *)core_base + s->desc->base_offset;
+    s->mask = s->desc->slot_count - 1;
     s->last_seq = 0;
 
     DEBUG_PRINT_MWMR("subscriber ready on '%s'\n", topic);

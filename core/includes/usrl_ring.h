@@ -35,11 +35,12 @@
  *
  * =============================================================================
  */
-typedef struct {
-    RingDesc *desc;       /* ring descriptor in SHM */
-    uint8_t  *base_ptr;   /* pointer to slot region */
-    uint32_t  mask;       /* (slot_count - 1) for fast index wrap */
-    uint16_t  pub_id;     /* publisher id */
+typedef struct
+{
+    RingDesc *desc;    /* ring descriptor in SHM */
+    uint8_t *base_ptr; /* pointer to slot region */
+    uint32_t mask;     /* (slot_count - 1) for fast index wrap */
+    uint16_t pub_id;   /* publisher id */
 } UsrlPublisher;
 
 /* =============================================================================
@@ -51,11 +52,12 @@ typedef struct {
  *
  * =============================================================================
  */
-typedef struct {
+typedef struct
+{
     RingDesc *desc;
-    uint8_t  *base_ptr;
-    uint32_t  mask;
-    uint64_t  last_seq;   /* the "next" expected sequence */
+    uint8_t *base_ptr;
+    uint32_t mask;
+    uint64_t last_seq; /* the "next" expected sequence */
 } UsrlSubscriber;
 
 /* =============================================================================
@@ -67,11 +69,12 @@ typedef struct {
  *
  * =============================================================================
  */
-typedef struct {
+typedef struct
+{
     RingDesc *desc;
-    uint8_t  *base_ptr;
-    uint32_t  mask;
-    uint16_t  pub_id;
+    uint8_t *base_ptr;
+    uint32_t mask;
+    uint16_t pub_id;
 } UsrlMwmrPublisher;
 
 /* =============================================================================
@@ -85,17 +88,17 @@ typedef struct {
  * =============================================================================
  */
 void usrl_mwmr_pub_init(UsrlMwmrPublisher *p,
-                        void              *core_base,
-                        const char        *topic,
-                        uint16_t           pub_id);
+                        void *core_base,
+                        const char *topic,
+                        uint16_t pub_id);
 
-int  usrl_mwmr_pub_publish(UsrlMwmrPublisher *p,
-                           const void        *data,
-                           uint32_t           len);
+int usrl_mwmr_pub_publish(UsrlMwmrPublisher *p,
+                          const void *data,
+                          uint32_t len);
 
 void usrl_mwmr_sub_init(UsrlSubscriber *s,
-                        void           *core_base,
-                        const char     *topic);
+                        void *core_base,
+                        const char *topic);
 
 /* =============================================================================
  * SWMR API
@@ -107,13 +110,13 @@ void usrl_mwmr_sub_init(UsrlSubscriber *s,
  * =============================================================================
  */
 void usrl_pub_init(UsrlPublisher *p,
-                   void          *core_base,
-                   const char    *topic,
-                   uint16_t       pub_id);
+                   void *core_base,
+                   const char *topic,
+                   uint16_t pub_id);
 
-int  usrl_pub_publish(UsrlPublisher *p,
-                      const void    *data,
-                      uint32_t       len);
+int usrl_pub_publish(UsrlPublisher *p,
+                     const void *data,
+                     uint32_t len);
 
 /* =============================================================================
  * Subscriber API (Shared by SWMR and MWMR)
@@ -133,12 +136,12 @@ int  usrl_pub_publish(UsrlPublisher *p,
  * =============================================================================
  */
 void usrl_sub_init(UsrlSubscriber *s,
-                   void           *core_base,
-                   const char     *topic);
+                   void *core_base,
+                   const char *topic);
 
-int  usrl_sub_next(UsrlSubscriber *s,
-                   uint8_t        *out_buf,
-                   uint32_t        buf_len,
-                   uint16_t       *out_pub_id);
+int usrl_sub_next(UsrlSubscriber *s,
+                  uint8_t *out_buf,
+                  uint32_t buf_len,
+                  uint16_t *out_pub_id);
 
 #endif /* USRL_RING_H */
