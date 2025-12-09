@@ -13,4 +13,11 @@ target_link_libraries(usrl-ctl PRIVATE usrl_core)
 add_executable(usrl-top
     usrl_top.c
 )
+
 target_link_libraries(usrl-top PRIVATE usrl_core)
+
+# core_loader tool
+add_executable(core_loader
+    core_loader.c
+)
+target_link_libraries(core_loader PRIVATE usrl_core)
